@@ -1,0 +1,888 @@
+<title>WeatherEX Monitoring Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  :root {
+    --ground: #F5F7FA;
+    --surface: #FFFFFF;
+    --surface-2: #EDF1F6;
+    --ink: #12171F;
+    --ink-2: #39424F;
+    --muted: #5E6978;
+    --line: #D8DFE8;
+    --line-2: #BFC9D8;
+    --accent: #2B4C86;
+    --accent-soft: #E7EEF9;
+    --good: #14683A;
+    --warn: #8F4E08;
+    --crit: #A31D1D;
+    --unknown: #5C6775;
+    --good-bg: #E2F2E9;
+    --warn-bg: #FAEEDB;
+    --crit-bg: #FAE5E3;
+    --unknown-bg: #E8EDF2;
+
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0E1218;
+      --surface: #161C25;
+      --surface-2: #1C2430;
+      --ink: #E7ECF3;
+      --ink-2: #BAC4D2;
+      --muted: #8D99AA;
+      --line: #28313E;
+      --line-2: #3A4552;
+      --accent: #8FB4EE;
+      --accent-soft: #19222F;
+      --good: #4ADE80;
+      --warn: #FBBF24;
+      --crit: #F87171;
+      --unknown: #9AA6B6;
+      --good-bg: #122A1D;
+      --warn-bg: #2E2512;
+      --crit-bg: #2E1819;
+      --unknown-bg: #1D232C;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0E1218;
+    --surface: #161C25;
+    --surface-2: #1C2430;
+    --ink: #E7ECF3;
+    --ink-2: #BAC4D2;
+    --muted: #8D99AA;
+    --line: #28313E;
+    --line-2: #3A4552;
+    --accent: #8FB4EE;
+    --accent-soft: #19222F;
+    --good: #4ADE80;
+    --warn: #FBBF24;
+    --crit: #F87171;
+    --unknown: #9AA6B6;
+    --good-bg: #122A1D;
+    --warn-bg: #2E2512;
+    --crit-bg: #2E1819;
+    --unknown-bg: #1D232C;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- sticky bar ---------- */
+  .bar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+    background: var(--ground);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar-in {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 9px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px 18px;
+    flex-wrap: wrap;
+  }
+  .bar-name {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  .legend { display: flex; gap: 8px 14px; flex-wrap: wrap; }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .dot.g { background: var(--good); }
+  .dot.y { background: var(--warn); }
+  .dot.r { background: var(--crit); }
+  .dot.u { background: var(--unknown); }
+
+  /* ---------- shell ---------- */
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 0 72px;
+  }
+  .measure { max-width: 68ch; }
+
+  /* ---------- masthead ---------- */
+  .mast { padding-block: 44px 34px; border-bottom: 2px solid var(--ink); }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: clamp(31px, 6vw, 48px);
+    line-height: 1.05;
+    letter-spacing: -0.028em;
+    margin: 0 0 18px;
+    text-wrap: balance;
+    max-width: 17ch;
+  }
+  .standfirst {
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--ink-2);
+    margin: 0;
+    max-width: 60ch;
+  }
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 34px;
+    margin: 30px 0 0;
+  }
+  .fact { display: flex; flex-direction: column; gap: 1px; }
+  .fact dt {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .fact dd {
+    margin: 0;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- sections ---------- */
+  section { padding-block: 42px 4px; }
+  h2 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 25px;
+    letter-spacing: -0.02em;
+    margin: 0 0 5px;
+    text-wrap: balance;
+  }
+  .sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 22px;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+    margin: 30px 0 8px;
+  }
+  p { margin: 0 0 16px; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  code, .path {
+    font-family: var(--mono);
+    font-size: 0.855em;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.08em 0.36em;
+    color: var(--ink-2);
+    word-break: break-word;
+  }
+  .path { color: var(--accent); font-weight: 500; }
+  strong { font-weight: 600; color: var(--ink); }
+
+  /* ---------- figure ---------- */
+  figure { margin: 24px 0 8px; }
+  .scroll {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 18px 16px;
+  }
+  svg.flow { display: block; width: 100%; min-width: 820px; height: auto; }
+  .n-box { fill: var(--surface-2); stroke: var(--line-2); stroke-width: 1; }
+  .n-key { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.3; }
+  .n-zone { fill: none; stroke: var(--accent); stroke-width: 1; stroke-dasharray: 5 4; opacity: 0.7; }
+  .n-t { font-family: var(--sans); font-weight: 600; font-size: 12.5px; fill: var(--ink); }
+  .n-s { font-family: var(--mono); font-size: 10px; fill: var(--muted); }
+  .n-a { stroke: var(--line-2); stroke-width: 1.4; fill: none; }
+  .n-ak { stroke: var(--accent); stroke-width: 1.4; fill: none; }
+  .n-l { font-family: var(--mono); font-size: 10px; fill: var(--muted); }
+  .n-zl { font-family: var(--mono); font-size: 10px; fill: var(--accent); letter-spacing: 0.04em; }
+  .n-head { fill: var(--line-2); }
+  .n-headk { fill: var(--accent); }
+  figcaption {
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--muted);
+    margin-top: 12px;
+    max-width: 74ch;
+  }
+
+  /* ---------- layer stack ---------- */
+  .stack { margin: 22px 0 8px; }
+  .layer {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 0 18px;
+    padding: 20px 0;
+    border-top: 1px solid var(--line);
+  }
+  .layer:last-child { border-bottom: 1px solid var(--line); }
+  .layer-n {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    padding-top: 4px;
+    letter-spacing: 0.06em;
+  }
+  .layer-h {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 17px;
+    margin: 0 0 3px;
+    letter-spacing: -0.01em;
+  }
+  .layer-files {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin: 0 0 11px;
+    word-break: break-word;
+  }
+  .layer p { font-size: 16px; max-width: 66ch; margin: 0 0 12px; }
+  .layer p:last-child { margin-bottom: 0; }
+
+  /* ---------- tables ---------- */
+  .tbl-wrap { overflow-x: auto; margin: 20px 0 8px; }
+  table { border-collapse: collapse; width: 100%; min-width: 580px; }
+  caption {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-bottom: 9px;
+  }
+  th, td {
+    text-align: left;
+    padding: 11px 16px 11px 0;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+  th {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 11.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line-2);
+    white-space: nowrap;
+  }
+  td.mono, th.mono { font-family: var(--mono); font-size: 12.5px; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    padding: 3px 9px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .chip.g { background: var(--good-bg); color: var(--good); }
+  .chip.y { background: var(--warn-bg); color: var(--warn); }
+  .chip.r { background: var(--crit-bg); color: var(--crit); }
+  .chip.u { background: var(--unknown-bg); color: var(--unknown); }
+
+  /* ---------- callout ---------- */
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 18px 20px;
+    margin: 24px 0;
+    border-radius: 0 4px 4px 0;
+    max-width: 72ch;
+  }
+  .callout h3 { margin: 0 0 8px; font-size: 16px; }
+  .callout p { font-size: 15.5px; margin: 0 0 12px; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  /* ---------- evidence list ---------- */
+  .evidence { margin: 0 0 12px; padding: 0; list-style: none; max-width: 70ch; }
+  .evidence li {
+    position: relative;
+    padding-left: 22px;
+    margin-bottom: 10px;
+    font-size: 15.5px;
+  }
+  .evidence li::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 0.62em;
+    width: 7px;
+    height: 7px;
+    border: 1.5px solid var(--accent);
+    border-radius: 50%;
+  }
+
+  /* ---------- footer ---------- */
+  .foot {
+    margin-top: 56px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 24px;
+  }
+
+  @media (max-width: 560px) {
+    body { font-size: 16px; }
+    .layer { grid-template-columns: 1fr; gap: 6px; }
+    .layer-n { padding-top: 0; }
+  }
+</style>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="bar-name">WeatherEX Monitoring Dashboard</span>
+    <div class="legend">
+      <span class="legend-item"><span class="dot g"></span>green&nbsp;·&nbsp;working</span>
+      <span class="legend-item"><span class="dot y"></span>yellow&nbsp;·&nbsp;fallback</span>
+      <span class="legend-item"><span class="dot r"></span>red&nbsp;·&nbsp;broken</span>
+      <span class="legend-item"><span class="dot u"></span>gray&nbsp;·&nbsp;unknown</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="mast">
+    <p class="eyebrow">System design &amp; architecture</p>
+    <h1>Probing the platform from the outside</h1>
+    <p class="standfirst">
+      A standalone dashboard that walks the entire surface the WeatherEX product promises its
+      users — nine forecast models, every variable, every forecast day — and reports what is
+      actually reachable right now. It changes nothing in the three repos it watches, and it
+      needs no GCP credentials to do it.
+    </p>
+    <dl class="facts">
+      <div class="fact"><dt>Packages</dt><dd>2 &middot; npm workspaces</dd></div>
+      <div class="fact"><dt>Models probed</dt><dd>9</dd></div>
+      <div class="fact"><dt>Check tiers</dt><dd>3</dd></div>
+      <div class="fact"><dt>Credentials</dt><dd>None</dd></div>
+      <div class="fact"><dt>Source</dt><dd>3,592 lines</dd></div>
+    </dl>
+  </div>
+
+  <section>
+    <h2>The problem it solves</h2>
+    <p class="sub">Why an outside-in prober</p>
+    <div class="measure">
+      <p>
+        The frontend depends on the API server, which depends on the processing pipeline having
+        actually written data into GCS. When a link in that chain breaks, the product does not
+        raise an error — it quietly renders nothing for that one combination. Finding out what is
+        broken today means a person clicking through every model, variable and day by hand.
+      </p>
+      <p>
+        This dashboard automates that click-through against exactly the surface a real user can
+        select: each model's <code>availableVariables</code> &times; its <code>forecastDays</code>.
+        Every red square is therefore something a customer could hit right now, which is what makes
+        the board worth acting on rather than just worth reading.
+      </p>
+    </div>
+
+    <h3>Two packages, one install</h3>
+    <div class="tbl-wrap">
+      <table>
+        <caption>Workspace layout</caption>
+        <thead>
+          <tr><th class="mono">package</th><th>Stack</th><th>Role</th><th class="mono">dev port</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">server/</td>
+            <td>Node 24 &middot; TypeScript 5.9 &middot; Express 4 &middot; node-cron 3 &middot; <code>node:sqlite</code></td>
+            <td>Scheduler, checkers, results store, REST API</td>
+            <td class="mono">4000</td>
+          </tr>
+          <tr>
+            <td class="mono">web/</td>
+            <td>Vite 7 &middot; React 19 &middot; TypeScript 5.9 &middot; Tailwind 4</td>
+            <td>Read-only board, polls the REST API</td>
+            <td class="mono">5173</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="measure" style="margin-top:18px">
+      <code>npm run dev</code> starts both under <code>concurrently</code>, and Vite proxies
+      <code>/api</code> to port 4000 so the browser only ever talks to one origin. Storage is a
+      single SQLite file with no external service to stand up.
+    </p>
+  </section>
+
+  <section>
+    <h2>How a check actually travels</h2>
+    <p class="sub">Trigger to colored square</p>
+
+    <figure>
+      <div class="scroll">
+        <svg class="flow" viewBox="0 0 960 360" role="img"
+             aria-label="Three triggers feed a single run guard, which drives the matrix and feature runners. Both runners send every request through one shared rate limiter to public Google Cloud Storage and the public WeatherEX API. Results are upserted into SQLite, read by Express, and polled by the React dashboard every twenty seconds.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" class="n-head"></path>
+            </marker>
+            <marker id="ahk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" class="n-headk"></path>
+            </marker>
+          </defs>
+
+          <!-- triggers -->
+          <rect class="n-box" x="12" y="24" width="106" height="32" rx="3"></rect>
+          <text class="n-s" x="65" y="44" text-anchor="middle">cron */30</text>
+          <rect class="n-box" x="12" y="66" width="106" height="32" rx="3"></rect>
+          <text class="n-s" x="65" y="86" text-anchor="middle">cron */10</text>
+          <rect class="n-box" x="12" y="108" width="106" height="32" rx="3"></rect>
+          <text class="n-s" x="65" y="128" text-anchor="middle">POST /api/run</text>
+
+          <!-- guard -->
+          <rect class="n-box" x="152" y="24" width="112" height="116" rx="3"></rect>
+          <text class="n-t" x="208" y="72" text-anchor="middle">runInProgress</text>
+          <text class="n-s" x="208" y="90" text-anchor="middle">first wins,</text>
+          <text class="n-s" x="208" y="104" text-anchor="middle">rest no-op</text>
+
+          <!-- runners -->
+          <rect class="n-box" x="298" y="22" width="158" height="54" rx="3"></rect>
+          <text class="n-t" x="377" y="44" text-anchor="middle">matrixRunner</text>
+          <text class="n-s" x="377" y="61" text-anchor="middle">model x variable x day</text>
+          <rect class="n-box" x="298" y="88" width="158" height="54" rx="3"></rect>
+          <text class="n-t" x="377" y="110" text-anchor="middle">featureRunner</text>
+          <text class="n-s" x="377" y="127" text-anchor="middle">exists + fresh</text>
+
+          <!-- limiter -->
+          <rect class="n-key" x="490" y="24" width="106" height="116" rx="3"></rect>
+          <text class="n-t" x="543" y="66" text-anchor="middle">http.ts</text>
+          <text class="n-s" x="543" y="84" text-anchor="middle">max 24 in flight</text>
+          <text class="n-s" x="543" y="98" text-anchor="middle">8s timeout</text>
+          <text class="n-s" x="543" y="112" text-anchor="middle">never throws</text>
+
+          <!-- external zone -->
+          <rect class="n-zone" x="636" y="8" width="312" height="148" rx="4"></rect>
+          <text class="n-zl" x="792" y="26" text-anchor="middle">PUBLIC - NO CREDENTIALS</text>
+          <rect class="n-box" x="652" y="38" width="280" height="46" rx="3"></rect>
+          <text class="n-t" x="792" y="58" text-anchor="middle">storage.googleapis.com</text>
+          <text class="n-s" x="792" y="75" text-anchor="middle">weather-tiles bucket</text>
+          <rect class="n-box" x="652" y="96" width="280" height="46" rx="3"></rect>
+          <text class="n-t" x="792" y="116" text-anchor="middle">api.weatherex.ai</text>
+          <text class="n-s" x="792" y="133" text-anchor="middle">public routes</text>
+
+          <!-- arrows: triggers to guard -->
+          <line class="n-a" x1="118" y1="40" x2="146" y2="40" marker-end="url(#ah)"></line>
+          <line class="n-a" x1="118" y1="82" x2="146" y2="82" marker-end="url(#ah)"></line>
+          <line class="n-a" x1="118" y1="124" x2="146" y2="124" marker-end="url(#ah)"></line>
+
+          <!-- guard to runners -->
+          <line class="n-a" x1="264" y1="50" x2="292" y2="50" marker-end="url(#ah)"></line>
+          <line class="n-a" x1="264" y1="114" x2="292" y2="114" marker-end="url(#ah)"></line>
+
+          <!-- runners to limiter -->
+          <line class="n-a" x1="456" y1="50" x2="484" y2="50" marker-end="url(#ah)"></line>
+          <line class="n-a" x1="456" y1="114" x2="484" y2="114" marker-end="url(#ah)"></line>
+
+          <!-- limiter to external, both directions -->
+          <line class="n-ak" x1="600" y1="61" x2="648" y2="61" marker-end="url(#ahk)" marker-start="url(#ahk)"></line>
+          <text class="n-l" x="624" y="52" text-anchor="middle">HEAD</text>
+          <line class="n-ak" x1="600" y1="119" x2="648" y2="119" marker-end="url(#ahk)" marker-start="url(#ahk)"></line>
+          <text class="n-l" x="624" y="110" text-anchor="middle">GET</text>
+
+          <!-- down to sqlite -->
+          <line class="n-a" x1="377" y1="142" x2="377" y2="246" marker-end="url(#ah)"></line>
+          <text class="n-l" x="389" y="182">upsert status</text>
+          <text class="n-l" x="389" y="196">latest per key</text>
+
+          <!-- bottom row -->
+          <rect class="n-box" x="298" y="250" width="176" height="52" rx="3"></rect>
+          <text class="n-t" x="386" y="272" text-anchor="middle">SQLite</text>
+          <text class="n-s" x="386" y="289" text-anchor="middle">cells / features / markers / runs</text>
+          <rect class="n-box" x="520" y="250" width="152" height="52" rx="3"></rect>
+          <text class="n-t" x="596" y="272" text-anchor="middle">Express</text>
+          <text class="n-s" x="596" y="289" text-anchor="middle">7 read routes</text>
+          <rect class="n-box" x="718" y="250" width="214" height="52" rx="3"></rect>
+          <text class="n-t" x="825" y="272" text-anchor="middle">React dashboard</text>
+          <text class="n-s" x="825" y="289" text-anchor="middle">polls every 20s</text>
+
+          <line class="n-a" x1="474" y1="276" x2="514" y2="276" marker-end="url(#ah)"></line>
+          <text class="n-l" x="494" y="267" text-anchor="middle">read</text>
+          <line class="n-a" x1="672" y1="276" x2="712" y2="276" marker-end="url(#ah)"></line>
+          <text class="n-l" x="692" y="267" text-anchor="middle">JSON</text>
+        </svg>
+      </div>
+      <figcaption>
+        Every outbound request in the system funnels through one module. That is what keeps a
+        2,000-cell sweep from behaving like a denial-of-service attack against the platform it is
+        supposed to be watching — and it is why the concurrency ceiling is a single constant rather
+        than a per-caller concern.
+      </figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Server: four layers, one-way dependencies</h2>
+    <p class="sub">Config knows nothing of checks; checks know nothing of HTTP routing</p>
+
+    <div class="stack">
+
+      <div class="layer">
+        <div class="layer-n">01</div>
+        <div>
+          <h3 class="layer-h">Config — declarative truth, zero I/O</h3>
+          <p class="layer-files">server/src/config/models.ts &middot; paths.ts &middot; features.ts</p>
+          <p>
+            <code>MODEL_CONFIGS</code> holds one entry per model: its <code>cycleHours</code>,
+            <code>availabilityLagHours</code>, whether tile paths are cycle-scoped
+            (<code>{date}_{HH}</code>) or date-scoped (<code>{YYYYMMDD}</code>), whether it writes a
+            <code>_SUCCESS</code> marker, and its tile zoom — 3 for the eight global models, 2 for WFS.
+          </p>
+          <p>
+            <strong>The deliberate omission is the sharpest idea in the file.</strong> Per-variable
+            horizon ceilings that sit below a model's advertised range — ICON humidity stopping at
+            9h, AIFS humidity at 54h, ECMWF's real 144h wall behind a promised 15 days — are
+            <em>not</em> encoded. The checker probes the full promised range and lets a genuine 404
+            tell the story. A config that already knew the answer would hide precisely the landmines
+            the dashboard exists to find.
+          </p>
+          <p>
+            <code>paths.ts</code> is pure URL algebra. <code>latestCycle()</code> mirrors the backend's
+            lag logic, <code>fallbackCycle()</code> mirrors its previous-day shift, and four builders
+            dispatch on variable kind: <code>tile</code>, <code>wind-json</code>,
+            <code>ocean-json</code>, <code>daily-tile</code>.
+          </p>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-n">02</div>
+        <div>
+          <h3 class="layer-h">Checks — the only place network I/O happens</h3>
+          <p class="layer-files">server/src/checks/http.ts &middot; matrixRunner.ts &middot; featureRunner.ts</p>
+          <p>
+            <code>http.ts</code> wraps <code>fetch</code> so it never throws — timeouts and transport
+            errors land in a field instead — and adds a hand-rolled semaphore in about fifteen lines,
+            no dependency. Tier 1 walks the model grid; Tier 2 checks the features that are not
+            day-shaped at all.
+          </p>
+          <p>
+            Tier 2 reads the <strong>JSON body</strong>, not just the status line. That is forced by a
+            real property of the platform: <code>/public/point</code> and its siblings swallow a
+            missing array into <code>200 success:true value:null</code>. A status-only checker would
+            report confident green over an outage.
+          </p>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-n">03</div>
+        <div>
+          <h3 class="layer-h">Storage — four tables, one writer</h3>
+          <p class="layer-files">server/src/db/db.ts</p>
+          <p>
+            Built-in <code>node:sqlite</code>, so there are no native modules to compile and no
+            service to run. <code>cells</code>, <code>features</code> and <code>markers</code> are
+            upsert-on-conflict, holding the latest result per key; <code>runs</code> is the one
+            append-only table. No SQL exists outside this file — everything above it calls typed
+            functions.
+          </p>
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-n">04</div>
+        <div>
+          <h3 class="layer-h">Orchestration — cron in-process, one guard</h3>
+          <p class="layer-files">server/src/scheduler.ts &middot; routes/index.ts &middot; index.ts</p>
+          <p>
+            node-cron runs the matrix sweep every 30 minutes and the feature sweep every 10, both
+            behind a single <code>runInProgress</code> boolean: whichever arrives first wins, the rest
+            log and return. <code>POST /api/run</code> and the startup pass are the only paths that run
+            both tiers together. Triggers return immediately rather than blocking on the sweep, so the
+            Run-now button never holds a request open.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>The status algorithm</h2>
+    <p class="sub">What it takes to earn each color</p>
+    <p class="measure">
+      The four states are deliberately asymmetric. Green is cheap, red is expensive: only two
+      independent, cleanly-resolved 404s can produce it. Anything the checker could not read
+      conclusively becomes gray, which means <em>this check failed</em>, never <em>this feature is
+      broken</em> — confusing the two is how monitoring tools train people to ignore them.
+    </p>
+
+    <div class="tbl-wrap">
+      <table>
+        <caption>Tier 1 cell resolution, in order</caption>
+        <thead>
+          <tr><th>Probe outcome</th><th>Result</th><th>Reasoning</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">primary 200</td>
+            <td><span class="chip g">green</span></td>
+            <td>Serving normally. No fallback request is made at all.</td>
+          </tr>
+          <tr>
+            <td class="mono">primary clean 404<br>&rarr; fallback 200</td>
+            <td><span class="chip y">yellow</span></td>
+            <td>
+              Today's cycle is missing, but the previous day at <code>fh+24</code> answers — the exact
+              shift the backend performs itself. The user sees data; it is just older than advertised.
+            </td>
+          </tr>
+          <tr>
+            <td class="mono">primary clean 404<br>&rarr; fallback clean 404</td>
+            <td><span class="chip r">red</span></td>
+            <td>
+              The only branch permitted to claim confirmed breakage. Both probes had to cleanly
+              resolve to not-found, not merely fail to resolve.
+            </td>
+          </tr>
+          <tr>
+            <td class="mono">403 / 500 / timeout<br>on either probe</td>
+            <td><span class="chip u">gray</span></td>
+            <td>
+              Inconclusive. An unreadable check is never downgraded to red just because it happened on
+              the second probe rather than the first.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Tier 2 adds a payload rule</h3>
+    <p class="measure">
+      Features resolve against the public API instead of GCS: a <code>503</code> is red outright (the
+      backend's never-loaded case), any other non-2xx is red, a 2xx with an unparseable body is gray,
+      <code>success:false</code> in the body is red regardless of status, and a truthy
+      <code>stale</code> or <code>obsStale</code> flag is yellow. Loaded-but-old is a genuinely
+      different failure from missing, and the board keeps them apart.
+    </p>
+  </section>
+
+  <section>
+    <h2>Never trust the clock</h2>
+    <p class="sub">The hardest-won piece of logic in the repo</p>
+
+    <div class="callout">
+      <h3>resolveConfirmedCycle() — why a lag estimate is not good enough</h3>
+      <p>
+        The obvious implementation picks the cycle that <em>should</em> be ready by now and probes it.
+        That implementation was tried, and it failed in production for a structural reason: the
+        fallback path derives from the same estimate. One optimistic guess therefore misses
+        <em>both</em> probes, and an entire model reds out while a complete, very recent cycle sits one
+        step behind it.
+      </p>
+      <p>
+        So the checker resolves cycles the way the real backend does — it only ever probes a cycle
+        whose <code>_SUCCESS</code> marker it has actually seen, walking newest-first up to seven days
+        back, <strong>per variable</strong>.
+      </p>
+    </div>
+
+    <ul class="evidence">
+      <li>
+        <strong>The 17-minute miss.</strong> An AIFS estimate landed just past its configured 8-hour
+        lag on a cycle whose marker did not exist yet, while the previous cycle was fully live.
+      </li>
+      <li>
+        <strong>Why per-variable, not per-model.</strong> AIFS <code>rain_accumulation</code> had a
+        marker for a cycle that <code>temperature</code> did not. Resolving once per model and reusing
+        it would mis-cycle every variable that finished at a different time.
+      </li>
+      <li>
+        <strong>Why seven days, not one.</strong> An <code>et0</code> check found neither today's nor
+        yesterday's cycle complete, but one from two days back — which was the exact cycle the live
+        frontend was serving tiles from. A one-day lookback would have reported the whole variable
+        broken while users were looking at its data.
+      </li>
+      <li>
+        <strong>Why bounded at all.</strong> Past roughly a week, "still findable if you search far
+        enough" stops being meaningfully different from broken. Searching indefinitely would paper
+        over exactly what the board is for.
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>REST contract</h2>
+    <p class="sub">Seven routes, six of them reads</p>
+    <div class="tbl-wrap">
+      <table>
+        <caption>server &rarr; web</caption>
+        <thead>
+          <tr><th class="mono">route</th><th>Returns</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">GET /api/summary</td><td>Overall counts, per-model rollup, last run timestamp, in-progress flag</td></tr>
+          <tr><td class="mono">GET /api/models/:model</td><td>Full variable grid for one model, each with its day cells and marker state</td></tr>
+          <tr><td class="mono">GET /api/cell/:model/:variable/:day</td><td>Drill-down: the exact URLs probed, both HTTP statuses, error text, timestamp</td></tr>
+          <tr><td class="mono">GET /api/features</td><td>Tier 2 results plus the newest check time across them</td></tr>
+          <tr><td class="mono">GET /api/extras</td><td>Tier 3 — variables the pipeline produces but the product does not expose</td></tr>
+          <tr><td class="mono">POST /api/run</td><td>Triggers a full run; replies immediately with started/declined</td></tr>
+          <tr><td class="mono">GET /api/run/status</td><td>In-progress flag and last run timestamp, for the poll loop</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Frontend</h2>
+    <p class="sub">No router, no state library, no data-fetching library</p>
+    <div class="measure">
+      <p>
+        <code>App.tsx</code> owns all state. It loads all nine model details up front — cheap at that
+        size, and having them in hand is what lets search and sort work across variable names rather
+        than just model labels — then polls summary and run-status every 20 seconds.
+      </p>
+      <p>
+        The refresh trick is worth copying: heavy refetches fire only when <code>lastRunAt</code>
+        actually moves, because nothing else can change between runs. A 20-second poll therefore costs
+        two small requests, not a full reload of the board.
+      </p>
+      <p>
+        Logic lives in pure modules so components stay presentational. <code>status.ts</code> handles
+        severity tallying — note <code>newRed</code>, which counts reds only on rows without a
+        <code>knownGap</code>, so documented landmines never drown out fresh breakage.
+        <code>grid.ts</code> expands sparse cells into dense day rows, keeping <em>never scheduled</em>
+        (rendered blank) visually distinct from <em>checked, unknown</em> (rendered gray).
+      </p>
+    </div>
+
+    <h3>One Tailwind 4 gotcha</h3>
+    <p class="measure">
+      Status class names are spelled out as complete literals in <code>status.ts</code> rather than
+      composed. Tailwind's scanner reads source text, so a template literal like
+      <code>text-status-${x}</code> is invisible to it and the class is never generated.
+    </p>
+  </section>
+
+  <section>
+    <h2>Known drift</h2>
+    <p class="sub">Where the plan and the code disagree, and what the code left open</p>
+
+    <h3>PLAN.md is the older document — the code won these</h3>
+    <div class="tbl-wrap">
+      <table>
+        <caption>Documentation drift</caption>
+        <thead>
+          <tr><th>Topic</th><th>PLAN.md says</th><th>Code does</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Storage driver</td>
+            <td class="mono">better-sqlite3</td>
+            <td>Built-in <code>node:sqlite</code>, no native dependency. README is already correct.</td>
+          </tr>
+          <tr>
+            <td>Matrix file</td>
+            <td class="mono">config/testMatrix.ts</td>
+            <td class="mono">config/models.ts</td>
+          </tr>
+          <tr>
+            <td>History depth</td>
+            <td>"Stores full run history, not just the latest snapshot"</td>
+            <td>
+              Only <code>runs</code> is append-only; cells, features and markers are last-write-wins.
+              The how-long-has-this-been-red view is not a query away yet — <code>db.ts</code> flags
+              per-check history as an explicit fast-follow.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Loose ends in the code</h3>
+    <ul class="evidence">
+      <li>
+        <code>TILE_PUBLIC_BASE</code> is documented in <code>.env.example</code>, but
+        <code>paths.ts</code> hardcodes it. Setting the variable does nothing.
+      </li>
+      <li>
+        The Dockerfile copies <code>web/dist</code> into the image, but <code>index.ts</code> never
+        calls <code>express.static</code>. A container built today would serve the API with no UI.
+      </li>
+      <li>
+        <code>getOverallCounts()</code> sums the <code>cells</code> table only, so a features-only
+        cron run writes matrix counts into its own <code>runs</code> row.
+      </li>
+      <li>
+        <code>checkDailyTileCell</code> resolves to <code>result.ok ? green : red</code>, so a timeout
+        on an <code>et0</code> or <code>gdd</code> cell reports confirmed-broken. Every other cell path
+        would call that gray — this is the one place the four-state discipline is not applied.
+      </li>
+    </ul>
+  </section>
+
+  <div class="foot">
+    <span>Reviewed against the working tree at 2026-10-13</span>
+    <span>server/ + web/ &middot; 3,592 lines of TypeScript</span>
+    <span>Source of truth: the code, not this page</span>
+  </div>
+
+</div>

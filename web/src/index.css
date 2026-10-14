@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens: status colors are FIXED across light/dark (same hex both
+ * modes — see dataviz skill's references/palette.md). Chrome/ink tokens
+ * differ per mode and are declared once here, then aliased into Tailwind's
+ * @theme so every `bg-surface` / `text-ink` / `bg-status-good` utility
+ * resolves through the underlying custom property and swaps automatically
+ * under `prefers-color-scheme` — no `dark:` variants needed anywhere else
+ * in the app.
+ */
+
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-page: var(--page-plane);
+  --color-surface: var(--surface-1);
+  --color-ink: var(--text-primary);
+  --color-ink-secondary: var(--text-secondary);
+  --color-ink-muted: var(--text-muted);
+  --color-grid: var(--gridline);
+  --color-border: var(--border-hairline);
+
+  --color-status-good: var(--status-good);
+  --color-status-warning: var(--status-warning);
+  --color-status-critical: var(--status-critical);
+  --color-status-unknown: var(--status-unknown);
+}
+
+:root {
+  color-scheme: light;
+
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-critical: #d03b3b;
+  --status-unknown: #898781;
+
+  --surface-1: #fcfcfb;
+  --page-plane: #f9f9f7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --gridline: #e1e0d9;
+  --border-hairline: rgba(11, 11, 11, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    /* status-good/warning/critical/unknown intentionally unchanged */
+
+    --surface-1: #1a1a19;
+    --page-plane: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --border-hairline: rgba(255, 255, 255, 0.1);
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--page-plane);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ExtrasPanel's <summary> uses its own chevron icon (rotated via
+   group-open:), so suppress the native disclosure triangle in both
+   Chromium and Firefox. */
+summary {
+  list-style: none;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Native tooltip-ish elements (title attr) inherit the system look; nothing
+   to override. Scrollbars follow color-scheme automatically in modern
+   browsers via the `color-scheme` declarations above. */
+
+@keyframes drawer-in {
+  from {
+    transform: translateX(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-drawer-in {
+  animation: drawer-in 160ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drawer-in,
+  .animate-pulse,
+  .animate-spin {
+    animation: none !important;
+  }
+}
